@@ -80,3 +80,11 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     train(subj_ind, dataset_path, deep4_path, result_path_subj, progression_handler, trainer, config['n_batch'],
           config['lr_d'], config['lr_g'], config['betas'], config['n_epochs_per_stage'], config['n_epochs_metrics'],
           config['plot_every_epoch'], config['orig_fs'])
+
+if __name__ == '__main__':
+    run(subj_ind=1,  # Replace with the actual subject index
+        result_name="my_results",  # Replace with the desired result name
+        dataset_path="E:\\Datasets\\high-gamma",  # Replace with the correct dataset path
+        deep4_path="E:\Models\deep4",  # Replace with the correct deep4 path
+        result_path="E:\Results\eeggan",  # Replace with the desired result path
+    )

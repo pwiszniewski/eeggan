@@ -20,3 +20,10 @@ def run(subj_ind: int, high_gamma_datapath: str, dataset_path: str, deep4_path: 
     make_dataset_for_subj(subj_ind, high_gamma_datapath, dataset_path, CHANNELS_10_20, CLASSDICT_REST_RIGHT_HAND,
                           FS, SEGMENT_IVAL, INPUT_LENGTH)
     make_deep4_for_subj(subj_ind, dataset_path, deep4_path, N_PROGRESSIVE_STAGES, N_DEEP4)
+
+if __name__ == '__main__':
+    run(subj_ind=1,
+        high_gamma_datapath='E:\\Datasets\\high-gamma-dataset\\data',
+        dataset_path='E:\Datasets\high-gamma',
+        deep4_path='E:\Models\deep4',
+        )

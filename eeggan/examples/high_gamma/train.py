@@ -99,3 +99,4 @@ def train(subj_ind: int, dataset_path: str, deep4s_path: str, result_path: str,
         trainer.detach_metrics(metrics, usage_metrics)
         if stage != progression_handler.n_stages - 1:
             progression_handler.advance_stage()
+
