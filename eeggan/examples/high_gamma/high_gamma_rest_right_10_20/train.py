@@ -11,6 +11,7 @@ from eeggan.model.builder import ProgressiveModelBuilder
 from eeggan.pytorch.utils.weights import weight_filler
 from eeggan.training.progressive.handler import ProgressionHandler
 from eeggan.training.trainer.gan_softplus import GanSoftplusTrainer
+from utils import read_config
 
 n_epochs_per_stage = 2000
 default_config = dict(
@@ -82,9 +83,10 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
           config['plot_every_epoch'], config['orig_fs'])
 
 if __name__ == '__main__':
-    run(subj_ind=1,  # Replace with the actual subject index
-        result_name="my_results",  # Replace with the desired result name
-        dataset_path="E:\\Datasets\\high-gamma",  # Replace with the correct dataset path
-        deep4_path="E:\Models\deep4",  # Replace with the correct deep4 path
-        result_path="E:\Results\eeggan",  # Replace with the desired result path
-    )
+    config = read_config()
+
+    run(subj_ind=config['TRAINING']['subj_ind'],
+        result_name=config['TRAINING']['result_name'],
+        dataset_path=config['PATHS']['dataset_path'],
+        deep4_path=config['PATHS']['deep4_path'],
+        result_path=config['PATHS']['result_path'])
