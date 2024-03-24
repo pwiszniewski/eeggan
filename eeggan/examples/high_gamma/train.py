@@ -15,15 +15,16 @@ from torch.utils.data import DataLoader
 from eeggan.cuda import to_cuda, init_cuda
 from eeggan.data.dataset import Data
 from eeggan.data.preprocess.resample import downsample
-from eeggan.examples.high_gamma.make_data import load_dataset, load_deeps4
+from eeggan.examples.high_gamma.make_data import load_deeps4
 from eeggan.training.handlers.metrics import WassersteinMetric, InceptionMetric, FrechetMetric, LossMetric, \
     ClassificationMetric
 from eeggan.training.handlers.plots import SpectralPlot
 from eeggan.training.progressive.handler import ProgressionHandler
 from eeggan.training.trainer.trainer import Trainer
+from eeggan.data.dataset import Dataset
 
 
-def train(subj_ind: int, dataset_path: str, deep4s_path: str, result_path: str,
+def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
           progression_handler: ProgressionHandler, trainer: Trainer, n_batch: int, lr_d: float, lr_g: float,
           betas: Tuple[float, float], n_epochs_per_stage: int, n_epochs_metrics: int, plot_every_epoch: int,
           orig_fs: float):
@@ -32,9 +33,8 @@ def train(subj_ind: int, dataset_path: str, deep4s_path: str, result_path: str,
 
     init_cuda()  # activate cuda
 
-    dataset = load_dataset(subj_ind, dataset_path)
     train_data = dataset.train_data
-    test_data = dataset.test_data
+    # test_data = dataset.test_data
 
     discriminator = progression_handler.discriminator
     generator = progression_handler.generator
