@@ -4,6 +4,13 @@ import os
 import joblib
 from ignite.engine import Events
 
+import os
+import sys
+current_path = os.getcwd()
+print(current_path)
+sys.path.append("../eeggan")
+
+
 from eeggan.examples.high_gamma.high_gamma_rest_right_10_20.make_data import FS, N_PROGRESSIVE_STAGES, INPUT_LENGTH
 from eeggan.examples.high_gamma.models.baseline import Baseline
 from eeggan.examples.high_gamma.train import train
@@ -12,6 +19,7 @@ from eeggan.pytorch.utils.weights import weight_filler
 from eeggan.training.progressive.handler import ProgressionHandler
 from eeggan.training.trainer.gan_softplus import GanSoftplusTrainer
 from utils import read_config
+from eeggan.examples.high_gamma.make_data import load_dataset
 
 n_epochs_per_stage = 2000
 default_config = dict(
@@ -38,8 +46,8 @@ default_config = dict(
     n_filters=120,
     n_time=INPUT_LENGTH,
 
-    upsampling='conv',
-    downsampling='conv',
+    upsampling='area',
+    downsampling='area',
     discfading='cubic',
     genfading='cubic',
 )
