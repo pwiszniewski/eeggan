@@ -109,7 +109,7 @@ data = {
         'name': 'data.datasets.MK_gen.MK_gen',
         'args': {},
         'kwargs': {
-            'dataset_dir': 'P:\Datasets\MK_gen_231229',
+            'dataset_dir': None,
             'subjects_selected': [0],
             'channels_selected': ['1'],
             'targets_selected': [8],
@@ -180,8 +180,10 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
           config['lr_d'], config['lr_g'], config['betas'], config['n_epochs_per_stage'], config['n_epochs_metrics'],
           config['plot_every_epoch'], config['orig_fs'])
 
+
 if __name__ == '__main__':
     config = read_config()
+    data['dataset']['kwargs']['dataset_dir'] = config['PATHS']['MK_gen_231229_path']
 
     run(subj_ind=config['TRAINING']['subj_ind'],
         result_name=config['TRAINING']['result_name'],
