@@ -76,8 +76,9 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
         metric_frechet = FrechetMetric(deep4s, sample_factor)
         metric_loss = LossMetric()
         metric_classification = ClassificationMetric(deep4s, sample_factor)
-        metrics = [metric_wasserstein, metric_inception, metric_frechet, metric_loss, metric_classification]
-        metric_names = ["wasserstein", "inception", "frechet", "loss", "classification"]
+        metrics = [metric_wasserstein] # [metric_wasserstein, metric_inception, metric_frechet, metric_loss, metric_classification]
+        metric_names = ["wasserstein"] # ["wasserstein", "inception", "frechet", "loss", "classification"]
+
         trainer.attach_metrics(metrics, metric_names, usage_metrics)
 
         # wrap into cuda loader

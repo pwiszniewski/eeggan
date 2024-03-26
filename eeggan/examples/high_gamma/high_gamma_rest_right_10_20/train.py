@@ -58,7 +58,7 @@ from eeggan.data.datasets.MK_gen import MK_gen
 
 n_epochs_per_stage = 2000
 default_config = dict(
-    n_chans=21,  # number of channels in data
+    n_chans=1, #21,  # number of channels in data
     n_classes=1,  # number of classes in data
     orig_fs=FS,  # sampling rate of data
 
@@ -135,7 +135,7 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     # append zeros to the last dimension to 896
     dataset.train_data.X = torch.cat((dataset.train_data.X, torch.zeros(dataset.train_data.X.size(0), 1, 896 - dataset.train_data.X.size(2))), dim=2)
     # replicate the data to 21 channels
-    dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
+    # dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
     dataset.train_data.y = dataset.dataset.tensors[1].float()
     y_onehot = torch.zeros(dataset.train_data.y.size(0), config['n_classes'])
     dataset.train_data.y_onehot = y_onehot.scatter_(1, dataset.train_data.y.long().unsqueeze(1), 1)
