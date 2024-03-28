@@ -24,7 +24,7 @@ def labeled_plot(x, data_y, labels,
 
 
 def labeled_tube_plot(x, data_y, tube_y, labels,
-                      title="", xlabel="", ylabel="", axes=None):
+                      title="", xlabel="", ylabel="", axes=None, y_lim=None):
     x = np.asarray(x)
     data_y = np.asarray(data_y)
     tube_y = np.asarray(tube_y)
@@ -45,11 +45,14 @@ def labeled_tube_plot(x, data_y, tube_y, labels,
     axes.set_xlabel(xlabel)
     axes.set_ylabel(ylabel)
     axes.set_xlim(x.min(), x.max())
-    axes.set_ylim((data_y - tube_y).min(), (data_y + tube_y).max())
+    if y_lim:
+        axes.set_ylim(y_lim)
+    else:
+        axes.set_ylim((data_y - tube_y).min(), (data_y + tube_y).max())
     axes.legend()
 
 
-def spectral_plot(X_real: np.ndarray, X_fake: np.ndarray, fs, axes=None):
+def spectral_plot(X_real: np.ndarray, X_fake: np.ndarray, fs, axes=None, y_lim=None):
     n_samples = X_real.shape[2]
     freqs = np.fft.rfftfreq(n_samples, 1. / fs)
     amps_real = compute_spectral_amplitude(X_real, axis=2)
@@ -62,4 +65,6 @@ def spectral_plot(X_real: np.ndarray, X_fake: np.ndarray, fs, axes=None):
                       [amps_real_mean, amps_fake_mean],
                       [amps_real_std, amps_fake_std],
                       ["Real", "Fake"],
-                      "Mean spectral log amplitude", "Hz", "log(Amp)", axes)
+                      "Mean spectral log amplitude", "Hz", "log(Amp)",
+                      axes,
+                      y_lim=y_lim)

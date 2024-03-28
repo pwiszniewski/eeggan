@@ -11,6 +11,7 @@ current_path = os.getcwd()
 print(current_path)
 sys.path.append("../eeggan")
 
+import time
 
 from eeggan.examples.high_gamma.high_gamma_rest_right_10_20.make_data import FS, N_PROGRESSIVE_STAGES, INPUT_LENGTH
 from eeggan.examples.high_gamma.models.baseline import Baseline
@@ -58,7 +59,7 @@ from eeggan.data.datasets.MK_gen import MK_gen
 
 n_epochs_per_stage = 2000
 default_config = dict(
-    n_chans=1, #21,  # number of channels in data
+    n_chans=21, # 1 21,  # number of channels in data
     n_classes=1,  # number of classes in data
     orig_fs=FS,  # sampling rate of data
 
@@ -135,16 +136,16 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     # append zeros to the last dimension to 896
     dataset.train_data.X = torch.cat((dataset.train_data.X, torch.zeros(dataset.train_data.X.size(0), 1, 896 - dataset.train_data.X.size(2))), dim=2)
     # replicate the data to 21 channels
-    # dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
+    dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
     dataset.train_data.y = dataset.dataset.tensors[1].float()
     y_onehot = torch.zeros(dataset.train_data.y.size(0), config['n_classes'])
     dataset.train_data.y_onehot = y_onehot.scatter_(1, dataset.train_data.y.long().unsqueeze(1), 1)
-    n_examples = 160
+    n_examples = 1
     # take first n_examples examples
     dataset.train_data.X = dataset.train_data.X[:n_examples]
     dataset.train_data.y = dataset.train_data.y[:n_examples]
     dataset.train_data.y_onehot = dataset.train_data.y_onehot[:n_examples]
-
+    print(f'X shape: {dataset.train_data.X.shape}')
 
 
     # assert 1<0
@@ -176,17 +177,24 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     generator.train()
     discriminator.train()
 
-    train(subj_ind, dataset, deep4_path, result_path_subj, progression_handler, trainer, config['n_batch'],
-          config['lr_d'], config['lr_g'], config['betas'], config['n_epochs_per_stage'], config['n_epochs_metrics'],
-          config['plot_every_epoch'], config['orig_fs'])
+    # train(subj_ind, dataset, deep4_path, result_path_subj, progression_handler, trainer, config['n_batch'],
+    #       config['lr_d'], config['lr_g'], config['betas'], config['n_epochs_per_stage'], config['n_epochs_metrics'],
+    #       config['plot_every_epoch'], config['orig_fs']
+    train(subj_ind=subj_ind, dataset=dataset, deep4s_path=deep4_path, result_path=result_path_subj,
+          progression_handler=progression_handler, trainer=trainer, n_batch=config['n_batch'], lr_d=config['lr_d'],
+          lr_g=config['lr_g'], betas=config['betas'], n_epochs_per_stage=config['n_epochs_per_stage'],
+          n_epochs_metrics=config['n_epochs_metrics'], plot_every_epoch=config['plot_every_epoch'],
+          plot_y_lim=(-3, 1), orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
 
 
 if __name__ == '__main__':
     config = read_config()
     data['dataset']['kwargs']['dataset_dir'] = config['PATHS']['MK_gen_231229_path']
-
+    start_time = time.time()
     run(subj_ind=config['TRAINING']['subj_ind'],
         result_name=config['TRAINING']['result_name'],
         dataset_path=config['PATHS']['dataset_path'],
         deep4_path=config['PATHS']['deep4_path'],
         result_path=config['PATHS']['result_path'])
+    end_time = time.time()
+    print(f"Training took {end_time - start_time} seconds")

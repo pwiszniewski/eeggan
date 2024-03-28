@@ -2,6 +2,7 @@
 
 import os
 from abc import ABCMeta
+from typing import List, Tuple
 
 from matplotlib.figure import Figure
 
@@ -26,12 +27,13 @@ class EpochPlot(metaclass=ABCMeta):
 
 class SpectralPlot(EpochPlot):
 
-    def __init__(self, figure: Figure, plot_path: str, prefix: str, n_samples: int, fs: float):
+    def __init__(self, figure: Figure, plot_path: str, prefix: str, n_samples: int, fs: float, y_lim: Tuple[float, float] = None):
         self.n_samples = n_samples
         self.fs = fs
+        self.y_lim = y_lim
         super().__init__(figure, plot_path, prefix)
 
     def plot(self, trainer: Trainer):
         batch_output: BatchOutput = trainer.state.output
         spectral_plot(batch_output.batch_real.X.data.cpu().numpy(), batch_output.batch_fake.X.data.cpu().numpy(),
-                      self.fs, self.figure.gca())
+                      self.fs, self.figure.gca(), y_lim=self.y_lim)

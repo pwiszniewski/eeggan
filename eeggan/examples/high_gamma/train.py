@@ -19,6 +19,7 @@ from eeggan.examples.high_gamma.make_data import load_deeps4
 from eeggan.training.handlers.metrics import WassersteinMetric, InceptionMetric, FrechetMetric, LossMetric, \
     ClassificationMetric
 from eeggan.training.handlers.plots import SpectralPlot
+from eeggan.training.handlers.outputs import SaveOuputsMat
 from eeggan.training.progressive.handler import ProgressionHandler
 from eeggan.training.trainer.trainer import Trainer
 from eeggan.data.dataset import Dataset
@@ -27,7 +28,7 @@ from eeggan.data.dataset import Dataset
 def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
           progression_handler: ProgressionHandler, trainer: Trainer, n_batch: int, lr_d: float, lr_g: float,
           betas: Tuple[float, float], n_epochs_per_stage: int, n_epochs_metrics: int, plot_every_epoch: int,
-          orig_fs: float):
+          plot_y_lim: Tuple[float, float], orig_fs: float, n_epochs_save_output: int):
     plot_path = os.path.join(result_path, "plots")
     os.makedirs(plot_path, exist_ok=True)
 
@@ -66,9 +67,13 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
 
         # initiate spectral plotter
         spectral_plot = SpectralPlot(pyplot.figure(), plot_path, "spectral_stage_%d_" % stage, X_block.shape[2],
-                                     orig_fs / sample_factor)
+                                     orig_fs / sample_factor, y_lim=plot_y_lim)
         event_name = Events.EPOCH_COMPLETED(every=plot_every_epoch)
         spectral_handler = trainer.add_event_handler(event_name, spectral_plot)
+
+        # initiate output saver
+        save_output = SaveOuputsMat(result_path, "output_stage_%d_" % stage, fs=orig_fs / sample_factor)
+        trainer.add_event_handler(Events.EPOCH_COMPLETED(every=n_epochs_save_output), save_output)
 
         # initiate metrics
         metric_wasserstein = WassersteinMetric(100, np.prod(X_block.shape[1:]).item())
