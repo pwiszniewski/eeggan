@@ -140,7 +140,7 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     dataset.train_data.y = dataset.dataset.tensors[1].float()
     y_onehot = torch.zeros(dataset.train_data.y.size(0), config['n_classes'])
     dataset.train_data.y_onehot = y_onehot.scatter_(1, dataset.train_data.y.long().unsqueeze(1), 1)
-    n_examples = 1
+    n_examples = -1
     # take first n_examples examples
     dataset.train_data.X = dataset.train_data.X[:n_examples]
     dataset.train_data.y = dataset.train_data.y[:n_examples]
