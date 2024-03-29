@@ -121,6 +121,8 @@ data = {
     }
 }
 
+n_examples = 160
+
 default_model_builder = Baseline(default_config['n_stages'], default_config['n_latent'], default_config['n_time'],
                                  default_config['n_chans'], default_config['n_classes'], default_config['n_filters'],
                                  upsampling=default_config['upsampling'], downsampling=default_config['downsampling'],
@@ -140,7 +142,6 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     dataset.train_data.y = dataset.dataset.tensors[1].float()
     y_onehot = torch.zeros(dataset.train_data.y.size(0), config['n_classes'])
     dataset.train_data.y_onehot = y_onehot.scatter_(1, dataset.train_data.y.long().unsqueeze(1), 1)
-    n_examples = -1
     # take first n_examples examples
     dataset.train_data.X = dataset.train_data.X[:n_examples]
     dataset.train_data.y = dataset.train_data.y[:n_examples]
@@ -186,15 +187,20 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
           n_epochs_metrics=config['n_epochs_metrics'], plot_every_epoch=config['plot_every_epoch'],
           plot_y_lim=(-3, 1), orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
 
+def format_time_seconds(seconds):
+    return time.strftime('%H:%M:%S', time.gmtime(seconds))
+
 
 if __name__ == '__main__':
     config = read_config()
     data['dataset']['kwargs']['dataset_dir'] = config['PATHS']['MK_gen_231229_path']
     start_time = time.time()
+    print(f"Training started at {start_time}")
     run(subj_ind=config['TRAINING']['subj_ind'],
         result_name=config['TRAINING']['result_name'],
         dataset_path=config['PATHS']['dataset_path'],
         deep4_path=config['PATHS']['deep4_path'],
         result_path=config['PATHS']['result_path'])
     end_time = time.time()
-    print(f"Training took {end_time - start_time} seconds")
+    print("Training ended at {end_time}")
+    print(f"Training took {format_time_seconds(end_time - start_time)}")
