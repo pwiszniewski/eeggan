@@ -44,11 +44,9 @@ class SaveOuputsMat(metaclass=ABCMeta):
         amps_fake_mean = amps_fake.mean(axis=(0, 1)).squeeze()
         amps_fake_std = amps_fake.std(axis=(0, 1)).squeeze()
 
-        data = {'real': X_real, 'fake': X_fake, 'freqs': freqs, 'amps_real_mean': amps_real_mean,
-                'amps_real_std': amps_real_std, 'amps_fake_mean': amps_fake_mean, 'amps_fake_std': amps_fake_std}
+        data = {'X_real': X_real, 'X_fake': X_fake, 'freqs': freqs, 'spectral_real': amps_real, 'spectral_fake': amps_fake}
         mat_path = os.path.join(self.path, self.prefix + str(trainer.state.epoch) + '.mat')
         scipy.io.savemat(mat_path, data)
-
 
 
 

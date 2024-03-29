@@ -24,6 +24,8 @@ from utils import read_config
 from eeggan.examples.high_gamma.make_data import load_dataset
 from eeggan.data.datasets.MK_gen import MK_gen
 
+import wandb
+
 # n_epochs_per_stage = 2000
 # default_config = dict(
 #     n_chans=21,  # number of channels in data
@@ -131,6 +133,7 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 
 def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, result_path: str,
         config: dict = default_config, model_builder: ProgressiveModelBuilder = default_model_builder):
+
     dataset_org = load_dataset(subj_ind, dataset_path)
     dataset = MK_gen(**data['dataset']['kwargs'])
     dataset.train_data = dataset_org.train_data
@@ -155,7 +158,9 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     result_path_subj = os.path.join(result_path, result_name, str(subj_ind))
     os.makedirs(result_path_subj, exist_ok=True)
 
-    joblib.dump(config, os.path.join(result_path_subj, 'config.dict'), compress=False)
+    with open(os.path.join(result_path_subj, 'config.dict'), 'w') as f:
+        for key, value in config.items():
+            f.write(f'{key}: {value}\n')
     joblib.dump(model_builder, os.path.join(result_path_subj, 'model_builder.jblb'), compress=True)
 
     # create discriminator and generator modules
@@ -165,6 +170,9 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     # initiate weights
     generator.apply(weight_filler)
     discriminator.apply(weight_filler)
+
+    # Initialize wandb
+    run = wandb.init(project="eeggan", config=config)
 
     # trainer engine
     trainer = GanSoftplusTrainer(10, discriminator, generator, config['r1_gamma'], config['r2_gamma'])
@@ -186,6 +194,8 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
           lr_g=config['lr_g'], betas=config['betas'], n_epochs_per_stage=config['n_epochs_per_stage'],
           n_epochs_metrics=config['n_epochs_metrics'], plot_every_epoch=config['plot_every_epoch'],
           plot_y_lim=(-3, 1), orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
+
+    run.finish()
 
 def format_time_seconds(seconds):
     return time.strftime('%H:%M:%S', time.gmtime(seconds))
