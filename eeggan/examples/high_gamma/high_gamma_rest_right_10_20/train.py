@@ -131,8 +131,8 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
                                  discfading=default_config['discfading'], genfading=default_config['genfading'])
 
 
-def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, result_path: str,
-        config: dict = default_config, model_builder: ProgressiveModelBuilder = default_model_builder):
+def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
+        model_builder: ProgressiveModelBuilder = default_model_builder):
 
     dataset_org = load_dataset(subj_ind, dataset_path)
     dataset = MK_gen(**data['dataset']['kwargs'])
@@ -154,13 +154,10 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
 
     # assert 1<0
 
-
-    result_path_subj = os.path.join(result_path, result_name, str(subj_ind))
-    os.makedirs(result_path_subj, exist_ok=True)
-
     with open(os.path.join(result_path_subj, 'config.dict'), 'w') as f:
         for key, value in config.items():
             f.write(f'{key}: {value}\n')
+
     joblib.dump(model_builder, os.path.join(result_path_subj, 'model_builder.jblb'), compress=True)
 
     # create discriminator and generator modules
@@ -170,9 +167,6 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
     # initiate weights
     generator.apply(weight_filler)
     discriminator.apply(weight_filler)
-
-    # Initialize wandb
-    run = wandb.init(project="eeggan", config=config)
 
     # trainer engine
     trainer = GanSoftplusTrainer(10, discriminator, generator, config['r1_gamma'], config['r2_gamma'])
@@ -195,22 +189,37 @@ def run(subj_ind: int, result_name: str, dataset_path: str, deep4_path: str, res
           n_epochs_metrics=config['n_epochs_metrics'], plot_every_epoch=config['plot_every_epoch'],
           plot_y_lim=(-3, 1), orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
 
-    run.finish()
-
 def format_time_seconds(seconds):
     return time.strftime('%H:%M:%S', time.gmtime(seconds))
 
 
 if __name__ == '__main__':
     config = read_config()
+    result_path_subj = os.path.join(config['PATHS']['result_path'], config['TRAINING']['result_name'], config['TRAINING']['subj_ind'])
+    os.makedirs(result_path_subj, exist_ok=True)
+
     data['dataset']['kwargs']['dataset_dir'] = config['PATHS']['MK_gen_231229_path']
+    # Initialize wandb
+    run_wandb = wandb.init(project="eeggan", config=config)
+
+    # save output file
+    with open(os.path.join(result_path_subj, 'out.txt'), 'w') as f:
+        f.write(f"Training started at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        project_wandb = wandb.run.get_url()
+        f.write(f"Project wandb: {project_wandb}\n")
+
     start_time = time.time()
-    print(f"Training started at {start_time}")
+    print(f"Training started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     run(subj_ind=config['TRAINING']['subj_ind'],
-        result_name=config['TRAINING']['result_name'],
         dataset_path=config['PATHS']['dataset_path'],
-        deep4_path=config['PATHS']['deep4_path'],
-        result_path=config['PATHS']['result_path'])
+        deep4_path=config['PATHS']['deep4_path'])
     end_time = time.time()
-    print("Training ended at {end_time}")
+    print(f"Training ended at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Training took {format_time_seconds(end_time - start_time)}")
+
+    # save output file
+    with open(os.path.join(result_path_subj, 'out.txt'), 'a') as f:
+        f.write(f"Training ended at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Training took {format_time_seconds(end_time - start_time)}\n")
+
+    run_wandb.finish()
