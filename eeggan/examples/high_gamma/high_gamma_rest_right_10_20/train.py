@@ -59,9 +59,12 @@ import wandb
 
 ################################# MK gen data #############################################################
 
+
+
+
 n_epochs_per_stage = 2000
 default_config = dict(
-    n_chans=21, # 1 21,  # number of channels in data
+    n_chans=1, # 1 21,  # number of channels in data
     n_classes=1,  # number of classes in data
     orig_fs=FS,  # sampling rate of data
 
@@ -90,22 +93,6 @@ default_config = dict(
     genfading='cubic',
 )
 
-
-# data:
-#     fs: 256
-#     target: 'ssvep_dcgan'
-#     dataset:
-#         name: data.datasets.MK_gen.MK_gen
-#         args: {}
-#         kwargs:
-#             dataset_dir: /zfsauton2/home/pwisznie/Datasets/MK_gen_231229
-#             subjects_selected: [0]
-#             channels_selected: ['1']
-#             targets_selected: [8] # 8 13
-#             overlap: 0
-#             file_suffix: high
-#             percent_of_data: 10
-
 data = {
     'fs': 256,
     'dataset': {
@@ -115,7 +102,7 @@ data = {
             'dataset_dir': None,
             'subjects_selected': [0],
             'channels_selected': ['1'],
-            'targets_selected': [8],
+            'targets_selected': [8], # 8 13
             'overlap': 0,
             'file_suffix': 'high',
             'percent_of_data': 10
@@ -133,15 +120,15 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
         model_builder: ProgressiveModelBuilder = default_model_builder):
-
+    plot_y_lim = None # (-3, 1)
     dataset_org = load_dataset(subj_ind, dataset_path)
     dataset = MK_gen(**data['dataset']['kwargs'])
     dataset.train_data = dataset_org.train_data
     dataset.train_data.X = dataset.dataset.tensors[0]
-    # append zeros to the last dimension to 896
+    # # append zeros to the last dimension to 896
     dataset.train_data.X = torch.cat((dataset.train_data.X, torch.zeros(dataset.train_data.X.size(0), 1, 896 - dataset.train_data.X.size(2))), dim=2)
-    # replicate the data to 21 channels
-    dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
+    # # replicate the data to 21 channels
+    # dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
     dataset.train_data.y = dataset.dataset.tensors[1].float()
     y_onehot = torch.zeros(dataset.train_data.y.size(0), config['n_classes'])
     dataset.train_data.y_onehot = y_onehot.scatter_(1, dataset.train_data.y.long().unsqueeze(1), 1)
@@ -187,7 +174,7 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
           progression_handler=progression_handler, trainer=trainer, n_batch=config['n_batch'], lr_d=config['lr_d'],
           lr_g=config['lr_g'], betas=config['betas'], n_epochs_per_stage=config['n_epochs_per_stage'],
           n_epochs_metrics=config['n_epochs_metrics'], plot_every_epoch=config['plot_every_epoch'],
-          plot_y_lim=(-3, 1), orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
+          plot_y_lim=plot_y_lim, orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
 
 def format_time_seconds(seconds):
     return time.strftime('%H:%M:%S', time.gmtime(seconds))
