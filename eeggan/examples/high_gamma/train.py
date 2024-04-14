@@ -4,6 +4,7 @@ import os
 from typing import Tuple
 
 import numpy as np
+import scipy
 import torch
 from braindecode.torch_ext.modules import IntermediateOutputWrapper
 from ignite.engine import Events
@@ -19,10 +20,11 @@ from eeggan.examples.high_gamma.make_data import load_deeps4
 from eeggan.training.handlers.metrics import WassersteinMetric, InceptionMetric, FrechetMetric, LossMetric, \
     ClassificationMetric
 from eeggan.training.handlers.plots import SpectralPlot
-from eeggan.training.handlers.outputs import SaveOuputsMat
+from eeggan.training.handlers.outputs import SaveOutputsMat
 from eeggan.training.progressive.handler import ProgressionHandler
 from eeggan.training.trainer.trainer import Trainer
 from eeggan.data.dataset import Dataset
+from eeggan.validation.validation_helper import compute_spectral_amplitude
 
 
 def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
@@ -44,6 +46,18 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
     # usage to update every epoch and compute once at end of stage
     usage_metrics = MetricUsage(Events.STARTED, Events.EPOCH_COMPLETED(every=n_epochs_per_stage),
                                 Events.EPOCH_COMPLETED(every=n_epochs_metrics))
+
+    ##################### save real data and spectrum #####################
+    X_real = train_data.X
+    n_samples = X_real.shape[2]
+    fs = orig_fs
+    freqs = np.fft.rfftfreq(n_samples, 1. / fs)
+    spectral_amps_real = compute_spectral_amplitude(X_real, axis=2, log_scale=False)
+    # save spectrum
+    data = {'X_real': X_real, 'freqs': freqs, 'spectral_real': spectral_amps_real}
+    mat_path = os.path.join(result_path, 'real_spectral.mat')
+    scipy.io.savemat(mat_path, data)
+    ##################### save real data and spectrum #####################
 
     for stage in range(progression_handler.n_stages):
         # optimizer
@@ -72,8 +86,8 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
         spectral_handler = trainer.add_event_handler(event_name, spectral_plot)
 
         # initiate output saver
-        save_output = SaveOuputsMat(result_path, "output_stage_%d_" % stage, fs=orig_fs / sample_factor)
-        trainer.add_event_handler(Events.EPOCH_COMPLETED(every=n_epochs_save_output), save_output)
+        save_output = SaveOutputsMat(result_path, "output_stage_%d_" % stage, fs=orig_fs / sample_factor)
+        # trainer.add_event_handler(Events.EPOCH_COMPLETED(every=n_epochs_save_output), save_output)
 
         # initiate metrics
         metric_wasserstein = WassersteinMetric(100, np.prod(X_block.shape[1:]).item())
@@ -92,8 +106,29 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
         train_loader = DataLoader(train_data_tensor, batch_size=n_batch, shuffle=True)
 
         # train stage
-        state = trainer.run(train_loader, (stage + 1) * n_epochs_per_stage)
+        state = trainer.run(data=train_loader,
+                            max_epochs=(stage + 1) * n_epochs_per_stage)
         trainer.remove_event_handler(spectral_plot, event_name)  # spectral_handler.remove() does not work :(
+
+        ############################ save fake data and spectrum ############################
+        # create fake data
+        n_fake_examples = 1000
+        with torch.no_grad():
+            latent, y_fake, y_onehot_fake = generator.create_latent_input(rng=np.random.RandomState(0),
+                                                                          n_trials=n_fake_examples)
+            # X_fake = generator(latent, y=y_fake, y_onehot=y_onehot_fake) Tensor for argument #2 'mat1' is on CPU, but expected it to be on GPU (while checking arguments for addmm)
+            X_fake = generator(latent.cuda(), y=y_fake.cuda(), y_onehot=y_onehot_fake.cuda())
+        X_fake = X_fake.cpu().numpy()
+        # calculate spectrum
+        n_samples = X_fake.shape[2]
+        fs = orig_fs / sample_factor
+        freqs = np.fft.rfftfreq(n_samples, 1. / fs)
+        spectral_amps_fake = compute_spectral_amplitude(X_fake, axis=2, log_scale=False)
+        # save spectrum
+        data = {'X_fake': X_fake, 'freqs': freqs, 'spectral_fake': spectral_amps_fake}
+        mat_path = os.path.join(result_path, 'fake_spectral_stage_%d.mat' % stage)
+        scipy.io.savemat(mat_path, data)
+        ############################ save fake data and spectrum ############################
 
         # save stuff
         torch.save(to_save, os.path.join(result_path, 'modules_stage_%d.pt' % stage))

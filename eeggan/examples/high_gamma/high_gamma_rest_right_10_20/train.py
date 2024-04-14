@@ -63,7 +63,7 @@ import wandb
 
 
 
-n_epochs_per_stage = 2 #2000
+n_epochs_per_stage = 2000
 default_config = dict(
     n_chans=1, # 1 21,  # number of channels in data
     n_classes=12, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
@@ -73,7 +73,7 @@ default_config = dict(
     n_stages=N_PROGRESSIVE_STAGES,  # number of progressive stages
     n_epochs_per_stage=n_epochs_per_stage,  # epochs in each progressive stage
     n_epochs_metrics=100,
-    plot_every_epoch= 1, #100,
+    plot_every_epoch=100,
     n_epochs_fade=int(0.1 * n_epochs_per_stage),
     use_fade=False,
     freeze_stages=True,
@@ -94,8 +94,6 @@ default_config = dict(
     genfading='cubic',
 )
 
-n_examples = 160
-
 default_model_builder = Baseline(default_config['n_stages'], default_config['n_latent'], default_config['n_time'],
                                  default_config['n_chans'], default_config['n_classes'], default_config['n_filters'],
                                  upsampling=default_config['upsampling'], downsampling=default_config['downsampling'],
@@ -104,6 +102,8 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
         model_builder: ProgressiveModelBuilder = default_model_builder):
+    # n_examples = 160
+    n_examples = 'all'
     plot_y_lim = None # (-3, 1)
 
     dataset_org = load_dataset(subj_ind, dataset_path)
@@ -158,6 +158,8 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     y_onehot = torch.zeros(dataset.train_data.y.size(0), config['n_classes'])
     dataset.train_data.y_onehot = y_onehot.scatter_(1, dataset.train_data.y.long().unsqueeze(1), 1)
     # take first n_examples examples
+    if n_examples == 'all':
+        n_examples = dataset.train_data.X.size(0)
     dataset.train_data.X = dataset.train_data.X[:n_examples]
     dataset.train_data.y = dataset.train_data.y[:n_examples]
     dataset.train_data.y_onehot = dataset.train_data.y_onehot[:n_examples]

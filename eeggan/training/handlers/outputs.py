@@ -24,7 +24,7 @@ save ouputs of the model
 T = TypeVar('T')
 
 
-class SaveOuputsMat(metaclass=ABCMeta):
+class SaveOutputsMat(metaclass=ABCMeta):
     def __init__(self, out_path: str, prefix: str, fs: float):
         self.path = out_path
         self.prefix = prefix
@@ -37,10 +37,10 @@ class SaveOuputsMat(metaclass=ABCMeta):
 
         n_samples = X_real.shape[2]
         freqs = np.fft.rfftfreq(n_samples, 1. / self.fs)
-        amps_real = compute_spectral_amplitude(X_real, axis=2)
+        amps_real = compute_spectral_amplitude(X_real, axis=2, log_scale=False)
         amps_real_mean = amps_real.mean(axis=(0, 1)).squeeze()
         amps_real_std = amps_real.std(axis=(0, 1)).squeeze()
-        amps_fake = compute_spectral_amplitude(X_fake, axis=2)
+        amps_fake = compute_spectral_amplitude(X_fake, axis=2, log_scale=False)
         amps_fake_mean = amps_fake.mean(axis=(0, 1)).squeeze()
         amps_fake_std = amps_fake.std(axis=(0, 1)).squeeze()
 
