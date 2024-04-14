@@ -8,7 +8,7 @@ import scipy
 import torch
 from torch.utils.data import TensorDataset, Dataset
 
-from data.datasets.BaseDatasets import BaseEEGDataset
+from eeggan.data.datasets.BaseDatasets import BaseEEGDataset
 
 from torchvision import transforms
 

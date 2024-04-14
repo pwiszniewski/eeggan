@@ -23,6 +23,7 @@ from eeggan.training.trainer.gan_softplus import GanSoftplusTrainer
 from utils import read_config
 from eeggan.examples.high_gamma.make_data import load_dataset
 from eeggan.data.datasets.MK_gen import MK_gen
+from eeggan.data.datasets.SSVEP_12JFPM import SSVEP_12JFPM
 
 import wandb
 
@@ -62,17 +63,17 @@ import wandb
 
 
 
-n_epochs_per_stage = 2000
+n_epochs_per_stage = 2 #2000
 default_config = dict(
     n_chans=1, # 1 21,  # number of channels in data
-    n_classes=1,  # number of classes in data
+    n_classes=12, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
     orig_fs=FS,  # sampling rate of data
 
     n_batch=128,  # batch size
     n_stages=N_PROGRESSIVE_STAGES,  # number of progressive stages
     n_epochs_per_stage=n_epochs_per_stage,  # epochs in each progressive stage
     n_epochs_metrics=100,
-    plot_every_epoch=100,
+    plot_every_epoch= 1, #100,
     n_epochs_fade=int(0.1 * n_epochs_per_stage),
     use_fade=False,
     freeze_stages=True,
@@ -93,23 +94,6 @@ default_config = dict(
     genfading='cubic',
 )
 
-data = {
-    'fs': 256,
-    'dataset': {
-        'name': 'data.datasets.MK_gen.MK_gen',
-        'args': {},
-        'kwargs': {
-            'dataset_dir': None,
-            'subjects_selected': [0],
-            'channels_selected': ['1'],
-            'targets_selected': [8], # 8 13
-            'overlap': 0,
-            'file_suffix': 'high',
-            'percent_of_data': 10
-        }
-    }
-}
-
 n_examples = 160
 
 default_model_builder = Baseline(default_config['n_stages'], default_config['n_latent'], default_config['n_time'],
@@ -121,8 +105,49 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
         model_builder: ProgressiveModelBuilder = default_model_builder):
     plot_y_lim = None # (-3, 1)
+
     dataset_org = load_dataset(subj_ind, dataset_path)
-    dataset = MK_gen(**data['dataset']['kwargs'])
+
+    ################## original data ############################
+    # dataset = dataset_org
+
+    ################## MK gen data ############################
+
+    # dataset_config = {
+    #     'fs': 256,
+    #     'dataset': {
+    #         'name': 'data.datasets.MK_gen.MK_gen',
+    #         'args': {},
+    #         'kwargs': {
+    #             'dataset_dir': None,
+    #             'subjects_selected': [0],
+    #             'channels_selected': ['1'],
+    #             'targets_selected': [8],  # 8 13
+    #             'overlap': 0,
+    #             'file_suffix': 'high',
+    #             'percent_of_data': 10
+    #         }
+    #     }
+    # }
+    # dataset = MK_gen(**dataset_config['dataset']['kwargs'])
+
+    ################## 12 JFPM SSVEP data ############################
+    dataset_config = {
+        'dataset': {
+            'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+            'args': {},
+            'kwargs': {
+                'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
+                'subjects_selected': [8],
+                'channels_selected': ['Oz'],
+                'targets_selected': [9.25],
+                'overlap': 255
+            }
+        }
+    }
+    dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+
+    ############## prepare dataset ##############################
     dataset.train_data = dataset_org.train_data
     dataset.train_data.X = dataset.dataset.tensors[0]
     # # append zeros to the last dimension to 896
@@ -136,7 +161,11 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     dataset.train_data.X = dataset.train_data.X[:n_examples]
     dataset.train_data.y = dataset.train_data.y[:n_examples]
     dataset.train_data.y_onehot = dataset.train_data.y_onehot[:n_examples]
+
+    ##############################################################
+
     print(f'X shape: {dataset.train_data.X.shape}')
+
 
 
     # assert 1<0
@@ -174,7 +203,8 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
           progression_handler=progression_handler, trainer=trainer, n_batch=config['n_batch'], lr_d=config['lr_d'],
           lr_g=config['lr_g'], betas=config['betas'], n_epochs_per_stage=config['n_epochs_per_stage'],
           n_epochs_metrics=config['n_epochs_metrics'], plot_every_epoch=config['plot_every_epoch'],
-          plot_y_lim=plot_y_lim, orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage)
+          plot_y_lim=plot_y_lim, orig_fs=config['orig_fs'], n_epochs_save_output=n_epochs_per_stage,
+          plot_spectral_log_scale=False)
 
 def format_time_seconds(seconds):
     return time.strftime('%H:%M:%S', time.gmtime(seconds))
@@ -185,7 +215,6 @@ if __name__ == '__main__':
     result_path_subj = os.path.join(config['PATHS']['result_path'], config['TRAINING']['result_name'], config['TRAINING']['subj_ind'])
     os.makedirs(result_path_subj, exist_ok=True)
 
-    data['dataset']['kwargs']['dataset_dir'] = config['PATHS']['MK_gen_231229_path']
     # Initialize wandb
     run_wandb = wandb.init(project="eeggan", config=config)
 

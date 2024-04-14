@@ -27,13 +27,15 @@ class EpochPlot(metaclass=ABCMeta):
 
 class SpectralPlot(EpochPlot):
 
-    def __init__(self, figure: Figure, plot_path: str, prefix: str, n_samples: int, fs: float, y_lim: Tuple[float, float] = None):
+    def __init__(self, figure: Figure, plot_path: str, prefix: str, n_samples: int, fs: float,
+                 y_lim: Tuple[float, float] = None, log_scale: bool = True):
         self.n_samples = n_samples
         self.fs = fs
         self.y_lim = y_lim
+        self.log_scale = log_scale
         super().__init__(figure, plot_path, prefix)
 
     def plot(self, trainer: Trainer):
         batch_output: BatchOutput = trainer.state.output
         spectral_plot(batch_output.batch_real.X.data.cpu().numpy(), batch_output.batch_fake.X.data.cpu().numpy(),
-                      self.fs, self.figure.gca(), y_lim=self.y_lim)
+                      self.fs, self.figure.gca(), y_lim=self.y_lim, log_scale=self.log_scale)

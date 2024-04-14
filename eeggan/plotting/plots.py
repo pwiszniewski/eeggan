@@ -52,13 +52,13 @@ def labeled_tube_plot(x, data_y, tube_y, labels,
     axes.legend()
 
 
-def spectral_plot(X_real: np.ndarray, X_fake: np.ndarray, fs, axes=None, y_lim=None):
+def spectral_plot(X_real: np.ndarray, X_fake: np.ndarray, fs, axes=None, y_lim=None, log_scale=True):
     n_samples = X_real.shape[2]
     freqs = np.fft.rfftfreq(n_samples, 1. / fs)
-    amps_real = compute_spectral_amplitude(X_real, axis=2)
+    amps_real = compute_spectral_amplitude(X_real, axis=2, log_scale=log_scale)
     amps_real_mean = amps_real.mean(axis=(0, 1)).squeeze()
     amps_real_std = amps_real.std(axis=(0, 1)).squeeze()
-    amps_fake = compute_spectral_amplitude(X_fake, axis=2)
+    amps_fake = compute_spectral_amplitude(X_fake, axis=2, log_scale=log_scale)
     amps_fake_mean = amps_fake.mean(axis=(0, 1)).squeeze()
     amps_fake_std = amps_fake.std(axis=(0, 1)).squeeze()
     labeled_tube_plot(freqs,

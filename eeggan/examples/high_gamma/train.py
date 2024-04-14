@@ -28,7 +28,7 @@ from eeggan.data.dataset import Dataset
 def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
           progression_handler: ProgressionHandler, trainer: Trainer, n_batch: int, lr_d: float, lr_g: float,
           betas: Tuple[float, float], n_epochs_per_stage: int, n_epochs_metrics: int, plot_every_epoch: int,
-          plot_y_lim: Tuple[float, float], orig_fs: float, n_epochs_save_output: int):
+          plot_y_lim: Tuple[float, float], orig_fs: float, n_epochs_save_output: int, plot_spectral_log_scale: bool):
     plot_path = os.path.join(result_path, "plots")
     os.makedirs(plot_path, exist_ok=True)
 
@@ -67,7 +67,7 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
 
         # initiate spectral plotter
         spectral_plot = SpectralPlot(pyplot.figure(), plot_path, "spectral_stage_%d_" % stage, X_block.shape[2],
-                                     orig_fs / sample_factor, y_lim=plot_y_lim)
+                                     orig_fs / sample_factor, y_lim=plot_y_lim, log_scale=plot_spectral_log_scale)
         event_name = Events.EPOCH_COMPLETED(every=plot_every_epoch)
         spectral_handler = trainer.add_event_handler(event_name, spectral_plot)
 

@@ -38,6 +38,9 @@ def logsoftmax_act_to_softmax(act: Union[np.ndarray, Tensor]):
         return np.exp(act)
 
 
-def compute_spectral_amplitude(x, axis=None):
+def compute_spectral_amplitude(x, axis=None, log_scale=True):
     fft = np.fft.rfft(x, axis=axis)
-    return np.log(np.abs(fft))
+    if log_scale:
+        return np.log(np.abs(fft))
+    else:
+        return np.abs(fft)
