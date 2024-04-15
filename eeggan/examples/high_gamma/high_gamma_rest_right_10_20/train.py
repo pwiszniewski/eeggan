@@ -102,8 +102,8 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
         model_builder: ProgressiveModelBuilder = default_model_builder):
-    # n_examples = 160
-    n_examples = 'all'
+    n_examples = 160
+    # n_examples = 'all'
     plot_y_lim = None # (-3, 1)
 
     dataset_org = load_dataset(subj_ind, dataset_path)
@@ -146,6 +146,7 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
         }
     }
     dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    config['orig_fs'] = dataset.fs
 
     ############## prepare dataset ##############################
     dataset.train_data = dataset_org.train_data

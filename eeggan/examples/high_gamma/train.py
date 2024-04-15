@@ -48,7 +48,7 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
                                 Events.EPOCH_COMPLETED(every=n_epochs_metrics))
 
     ##################### save real data and spectrum #####################
-    X_real = train_data.X
+    X_real = train_data.X.numpy()
     n_samples = X_real.shape[2]
     fs = orig_fs
     freqs = np.fft.rfftfreq(n_samples, 1. / fs)
