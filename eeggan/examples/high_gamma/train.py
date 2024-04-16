@@ -112,13 +112,26 @@ def train(subj_ind: int, dataset: Dataset, deep4s_path: str, result_path: str,
 
         ############################ save fake data and spectrum ############################
         # create fake data
-        n_fake_examples = 1000
-        with torch.no_grad():
-            latent, y_fake, y_onehot_fake = generator.create_latent_input(rng=np.random.RandomState(0),
-                                                                          n_trials=n_fake_examples)
-            # X_fake = generator(latent, y=y_fake, y_onehot=y_onehot_fake) Tensor for argument #2 'mat1' is on CPU, but expected it to be on GPU (while checking arguments for addmm)
-            X_fake = generator(latent.cuda(), y=y_fake.cuda(), y_onehot=y_onehot_fake.cuda())
-        X_fake = X_fake.cpu().numpy()
+        n_fake_examples = 15870
+        # with torch.no_grad():
+        #     latent, y_fake, y_onehot_fake = generator.create_latent_input(rng=np.random.RandomState(0),
+        #                                                                   n_trials=n_fake_examples)
+        #     # X_fake = generator(latent, y=y_fake, y_onehot=y_onehot_fake) Tensor for argument #2 'mat1' is on CPU, but expected it to be on GPU (while checking arguments for addmm)
+        #     X_fake = generator(latent.cuda(), y=y_fake.cuda(), y_onehot=y_onehot_fake.cuda())
+        # X_fake = X_fake.cpu().numpy()
+        # generate fake data with batch
+        X_fake = []
+        num_generated = 0
+        while num_generated < n_fake_examples:
+            with torch.no_grad():
+                num_to_generate = min(n_fake_examples - num_generated, n_batch)
+                latent, y_fake, y_onehot_fake = generator.create_latent_input(rng=np.random.RandomState(0),
+                                                                              n_trials=num_to_generate)
+                X_fake_batch = generator(latent.cuda(), y=y_fake.cuda(), y_onehot=y_onehot_fake.cuda())
+                X_fake.append(X_fake_batch.cpu().numpy())
+                num_generated += n_batch
+        X_fake = np.concatenate(X_fake, axis=0)
+
         # calculate spectrum
         n_samples = X_fake.shape[2]
         fs = orig_fs / sample_factor
