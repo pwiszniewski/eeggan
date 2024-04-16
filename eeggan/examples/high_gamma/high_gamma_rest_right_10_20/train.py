@@ -20,7 +20,7 @@ from eeggan.model.builder import ProgressiveModelBuilder
 from eeggan.pytorch.utils.weights import weight_filler
 from eeggan.training.progressive.handler import ProgressionHandler
 from eeggan.training.trainer.gan_softplus import GanSoftplusTrainer
-from utils import read_config
+from utils import read_config, get_experiment_prefix
 from eeggan.examples.high_gamma.make_data import load_dataset
 from eeggan.data.datasets.MK_gen import MK_gen
 from eeggan.data.datasets.SSVEP_12JFPM import SSVEP_12JFPM
@@ -63,7 +63,7 @@ import wandb
 
 
 
-n_epochs_per_stage = 2000
+n_epochs_per_stage = 2 #2000
 default_config = dict(
     n_chans=1, # 1 21,  # number of channels in data
     n_classes=12, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
@@ -102,7 +102,7 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
         model_builder: ProgressiveModelBuilder = default_model_builder):
-    n_examples = 160
+    n_examples = 1000
     # n_examples = 'all'
     plot_y_lim = None # (-3, 1)
 
@@ -215,11 +215,12 @@ def format_time_seconds(seconds):
 
 if __name__ == '__main__':
     config = read_config()
-    result_path_subj = os.path.join(config['PATHS']['result_path'], config['TRAINING']['result_name'], config['TRAINING']['subj_ind'])
+    experiment_name = get_experiment_prefix() + '_' + config['TRAINING']['result_name']
+    result_path_subj = os.path.join(config['PATHS']['result_path'], experiment_name, config['TRAINING']['subj_ind'])
     os.makedirs(result_path_subj, exist_ok=True)
 
     # Initialize wandb
-    run_wandb = wandb.init(project="eeggan", config=config)
+    run_wandb = wandb.init(project="eeggan", config=config, name=experiment_name)
 
     # save output file
     with open(os.path.join(result_path_subj, 'out.txt'), 'w') as f:
