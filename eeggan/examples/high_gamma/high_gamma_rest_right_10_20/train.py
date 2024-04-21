@@ -63,10 +63,10 @@ import wandb
 
 
 
-n_epochs_per_stage = 2 #2000
+n_epochs_per_stage = 2000 #2000
 default_config = dict(
     n_chans=1, # 1 21,  # number of channels in data
-    n_classes=12, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
+    n_classes=1, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
     orig_fs=FS,  # sampling rate of data
 
     n_batch=128,  # batch size
@@ -102,7 +102,7 @@ default_model_builder = Baseline(default_config['n_stages'], default_config['n_l
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
         model_builder: ProgressiveModelBuilder = default_model_builder):
-    n_examples = 1000
+    n_examples = 160
     # n_examples = 'all'
     plot_y_lim = None # (-3, 1)
 
@@ -113,40 +113,41 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
 
     ################## MK gen data ############################
 
-    # dataset_config = {
-    #     'fs': 256,
-    #     'dataset': {
-    #         'name': 'data.datasets.MK_gen.MK_gen',
-    #         'args': {},
-    #         'kwargs': {
-    #             'dataset_dir': None,
-    #             'subjects_selected': [0],
-    #             'channels_selected': ['1'],
-    #             'targets_selected': [8],  # 8 13
-    #             'overlap': 0,
-    #             'file_suffix': 'high',
-    #             'percent_of_data': 10
-    #         }
-    #     }
-    # }
-    # dataset = MK_gen(**dataset_config['dataset']['kwargs'])
-
-    ################## 12 JFPM SSVEP data ############################
     dataset_config = {
+        'fs': 256,
         'dataset': {
-            'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+            'name': 'data.datasets.MK_gen.MK_gen',
             'args': {},
             'kwargs': {
-                'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
-                'subjects_selected': [8],
-                'channels_selected': ['Oz'],
-                'targets_selected': [9.25],
-                'overlap': 255
+                'dataset_dir': 'P:\Datasets\MK_gen_231229',
+                'subjects_selected': [0],
+                'channels_selected': ['1'],
+                'targets_selected': [8],  # 8 13
+                'overlap': 0,
+                'file_suffix': 'high',
+                'percent_of_data': 10
             }
         }
     }
-    dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    dataset = MK_gen(**dataset_config['dataset']['kwargs'])
     config['orig_fs'] = dataset.fs
+
+    ################## 12 JFPM SSVEP data ############################
+    # dataset_config = {
+    #     'dataset': {
+    #         'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+    #         'args': {},
+    #         'kwargs': {
+    #             'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
+    #             'subjects_selected': [8],
+    #             'channels_selected': ['Oz'],
+    #             'targets_selected': [9.25],
+    #             'overlap': 255
+    #         }
+    #     }
+    # }
+    # dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    # config['orig_fs'] = dataset.fs
 
     ############## prepare dataset ##############################
     dataset.train_data = dataset_org.train_data
@@ -218,6 +219,10 @@ if __name__ == '__main__':
     experiment_name = get_experiment_prefix() + '_' + config['TRAINING']['result_name']
     result_path_subj = os.path.join(config['PATHS']['result_path'], experiment_name, config['TRAINING']['subj_ind'])
     os.makedirs(result_path_subj, exist_ok=True)
+
+    # add empty file for notes
+    with open(os.path.join(result_path_subj, 'info.txt'), 'w') as f:
+        pass
 
     # Initialize wandb
     run_wandb = wandb.init(project="eeggan", config=config, name=experiment_name)
