@@ -8,6 +8,7 @@ from matplotlib.figure import Figure
 
 from eeggan.plotting.plots import spectral_plot
 from eeggan.training.trainer.trainer import Trainer, BatchOutput
+import wandb
 
 
 class EpochPlot(metaclass=ABCMeta):
@@ -39,3 +40,5 @@ class SpectralPlot(EpochPlot):
         batch_output: BatchOutput = trainer.state.output
         spectral_plot(batch_output.batch_real.X.data.cpu().numpy(), batch_output.batch_fake.X.data.cpu().numpy(),
                       self.fs, self.figure.gca(), y_lim=self.y_lim, log_scale=self.log_scale)
+        wandb_plot_name = self.prefix + str(trainer.state.epoch)
+        wandb.log({wandb_plot_name: wandb.Image(self.figure)})
