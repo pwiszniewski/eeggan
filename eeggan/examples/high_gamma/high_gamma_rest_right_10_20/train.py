@@ -66,7 +66,7 @@ import wandb
 n_epochs_per_stage = 2000 #2000
 default_config = dict(
     n_chans=1, # 1 21,  # number of channels in data
-    n_classes=1, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
+    n_classes=None, # 1(MK_gen) 2(original) 12(12JFPM)  # number of classes in data, selected randomly
     orig_fs=FS,  # sampling rate of data
 
     n_batch=128,  # batch size
@@ -94,14 +94,9 @@ default_config = dict(
     genfading='cubic',
 )
 
-default_model_builder = Baseline(default_config['n_stages'], default_config['n_latent'], default_config['n_time'],
-                                 default_config['n_chans'], default_config['n_classes'], default_config['n_filters'],
-                                 upsampling=default_config['upsampling'], downsampling=default_config['downsampling'],
-                                 discfading=default_config['discfading'], genfading=default_config['genfading'])
 
-
-def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config,
-        model_builder: ProgressiveModelBuilder = default_model_builder):
+def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config):
+        # model_builder: ProgressiveModelBuilder = default_model_builder):
     n_examples = 160
     # n_examples = 'all'
     plot_y_lim = None # (-3, 1)
@@ -112,7 +107,6 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     # dataset = dataset_org
 
     ################## MK gen data ############################
-
     dataset_config = {
         'fs': 256,
         'dataset': {
@@ -131,8 +125,9 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     }
     dataset = MK_gen(**dataset_config['dataset']['kwargs'])
     config['orig_fs'] = dataset.fs
+    config['n_classes'] = 1
 
-    ################## 12 JFPM SSVEP data ############################
+    ################# 12 JFPM SSVEP data ############################
     # dataset_config = {
     #     'dataset': {
     #         'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
@@ -148,6 +143,7 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     # }
     # dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
     # config['orig_fs'] = dataset.fs
+    # config['n_classes'] = 12
 
     ############## prepare dataset ##############################
     dataset.train_data = dataset_org.train_data
@@ -166,17 +162,26 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     dataset.train_data.y = dataset.train_data.y[:n_examples]
     dataset.train_data.y_onehot = dataset.train_data.y_onehot[:n_examples]
 
+    ################# data normalization ############################
+    dataset.train_data.X = (dataset.train_data.X - dataset.train_data.X.mean()) / dataset.train_data.X.std()
+
     ##############################################################
 
     print(f'X shape: {dataset.train_data.X.shape}')
 
-
-
-    # assert 1<0
-
+    # save config
     with open(os.path.join(result_path_subj, 'config.dict'), 'w') as f:
         for key, value in config.items():
             f.write(f'{key}: {value}\n')
+
+    # create model builder
+    model_builder = Baseline(default_config['n_stages'], default_config['n_latent'],
+                             default_config['n_time'],
+                             default_config['n_chans'], default_config['n_classes'],
+                             default_config['n_filters'],
+                             upsampling=default_config['upsampling'],
+                             downsampling=default_config['downsampling'],
+                             discfading=default_config['discfading'], genfading=default_config['genfading'])
 
     joblib.dump(model_builder, os.path.join(result_path_subj, 'model_builder.jblb'), compress=True)
 
