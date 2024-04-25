@@ -86,7 +86,7 @@ default_config = dict(
     betas=(0., 0.99),  # optimizer betas
 
     n_filters=120,
-    n_time=INPUT_LENGTH,
+    n_time=896, # INPUT_LENGTH(896), 256
 
     upsampling='area',
     downsampling='area',
@@ -107,49 +107,52 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     # dataset = dataset_org
 
     ################## MK gen data ############################
-    dataset_config = {
-        'fs': 256,
-        'dataset': {
-            'name': 'data.datasets.MK_gen.MK_gen',
-            'args': {},
-            'kwargs': {
-                'dataset_dir': 'P:\Datasets\MK_gen_231229',
-                'subjects_selected': [0],
-                'channels_selected': ['1'],
-                'targets_selected': [8],  # 8 13
-                'overlap': 0,
-                'file_suffix': 'high',
-                'percent_of_data': 10
-            }
-        }
-    }
-    dataset = MK_gen(**dataset_config['dataset']['kwargs'])
-    config['orig_fs'] = dataset.fs
-    config['n_classes'] = 1
-
-    ################# 12 JFPM SSVEP data ############################
     # dataset_config = {
+    #     'fs': 256,
     #     'dataset': {
-    #         'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+    #         'name': 'data.datasets.MK_gen.MK_gen',
     #         'args': {},
     #         'kwargs': {
-    #             'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
-    #             'subjects_selected': [8],
-    #             'channels_selected': ['Oz'],
-    #             'targets_selected': [9.25],
-    #             'overlap': 255
+    #             'dataset_dir': 'P:\Datasets\MK_gen_231229',
+    #             'subjects_selected': [0],
+    #             'channels_selected': ['1'],
+    #             'targets_selected': [8],  # 8 13
+    #             'overlap': 0,
+    #             'file_suffix': 'high',
+    #             'percent_of_data': 10
     #         }
     #     }
     # }
-    # dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    # dataset = MK_gen(**dataset_config['dataset']['kwargs'])
     # config['orig_fs'] = dataset.fs
-    # config['n_classes'] = 12
+    # config['n_classes'] = 1
+
+    ################# 12 JFPM SSVEP data ############################
+    dataset_config = {
+        'dataset': {
+            'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+            'args': {},
+            'kwargs': {
+                'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
+                'subjects_selected': [8],
+                'channels_selected': ['Oz'],
+                'targets_selected': [9.25],
+                'overlap': 255
+            }
+        }
+    }
+    dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    config['orig_fs'] = dataset.fs
+    config['n_classes'] = 12
 
     ############## prepare dataset ##############################
     dataset.train_data = dataset_org.train_data
     dataset.train_data.X = dataset.dataset.tensors[0]
     # # append zeros to the last dimension to 896
-    dataset.train_data.X = torch.cat((dataset.train_data.X, torch.zeros(dataset.train_data.X.size(0), 1, 896 - dataset.train_data.X.size(2))), dim=2)
+    # dataset.train_data.X = torch.cat((dataset.train_data.X, torch.zeros(dataset.train_data.X.size(0), 1, 896 - dataset.train_data.X.size(2))), dim=2)
+    # repeat samples to config['n_time']
+    dataset.train_data.X = dataset.train_data.X.repeat(1, 1, config['n_time'] // dataset.train_data.X.size(2) + 1)
+    dataset.train_data.X = dataset.train_data.X[:, :, :config['n_time']]
     # # replicate the data to 21 channels
     # dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
     dataset.train_data.y = dataset.dataset.tensors[1].float()
