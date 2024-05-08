@@ -86,7 +86,7 @@ default_config = dict(
     betas=(0., 0.99),  # optimizer betas
 
     n_filters=120,
-    n_time=896, # INPUT_LENGTH(896), 256
+    n_time=256, # INPUT_LENGTH(896), 256
 
     upsampling='area',
     downsampling='area',
@@ -137,7 +137,8 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
                 'subjects_selected': [8],
                 'channels_selected': ['Oz'],
                 'targets_selected': [9.25],
-                'overlap': 255
+                'overlap': 255,
+                # 'percent_of_best_snr': 10
             }
         }
     }
@@ -151,8 +152,8 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     # # append zeros to the last dimension to 896
     # dataset.train_data.X = torch.cat((dataset.train_data.X, torch.zeros(dataset.train_data.X.size(0), 1, 896 - dataset.train_data.X.size(2))), dim=2)
     # repeat samples to config['n_time']
-    dataset.train_data.X = dataset.train_data.X.repeat(1, 1, config['n_time'] // dataset.train_data.X.size(2) + 1)
-    dataset.train_data.X = dataset.train_data.X[:, :, :config['n_time']]
+    # dataset.train_data.X = dataset.train_data.X.repeat(1, 1, config['n_time'] // dataset.train_data.X.size(2) + 1)
+    # dataset.train_data.X = dataset.train_data.X[:, :, :config['n_time']]
     # # replicate the data to 21 channels
     # dataset.train_data.X = dataset.train_data.X.repeat(1, 21, 1)
     dataset.train_data.y = dataset.dataset.tensors[1].float()
@@ -166,7 +167,11 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     dataset.train_data.y_onehot = dataset.train_data.y_onehot[:n_examples]
 
     ################# data normalization ############################
-    dataset.train_data.X = (dataset.train_data.X - dataset.train_data.X.mean()) / dataset.train_data.X.std()
+    # dataset.train_data.X = (dataset.train_data.X - dataset.train_data.X.mean()) / dataset.train_data.X.std()
+
+    ################# add noise to data ############################
+    noise = torch.randn_like(dataset.train_data.X) * 0.1
+    dataset.train_data.X += noise
 
     ##############################################################
 
