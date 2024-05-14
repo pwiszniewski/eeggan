@@ -24,6 +24,7 @@ from utils import read_config, get_experiment_prefix
 from eeggan.examples.high_gamma.make_data import load_dataset
 from eeggan.data.datasets.MK_gen import MK_gen
 from eeggan.data.datasets.SSVEP_12JFPM import SSVEP_12JFPM
+from eeggan.data.datasets.SSVEP_our_lab_sessions import SSVEP_our_lab_sessions
 
 import wandb
 
@@ -97,7 +98,7 @@ default_config = dict(
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config):
         # model_builder: ProgressiveModelBuilder = default_model_builder):
-    n_examples = 160
+    n_examples = 1000
     # n_examples = 'all'
     plot_y_lim = None # (-3, 1)
 
@@ -127,24 +128,47 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     # config['orig_fs'] = dataset.fs
     # config['n_classes'] = 1
 
-    ################# 12 JFPM SSVEP data ############################
+    # ################# 12 JFPM SSVEP data ############################
+    # dataset_config = {
+    #     'dataset': {
+    #         'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+    #         'args': {},
+    #         'kwargs': {
+    #             'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
+    #             'subjects_selected': [8],
+    #             'channels_selected': ['Oz'],
+    #             'targets_selected': [9.25],
+    #             'overlap': 255,
+    #             # 'percent_of_best_snr': 10
+    #         }
+    #     }
+    # }
+    # dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    # config['orig_fs'] = dataset.fs
+    # config['n_classes'] = 12
+
+    ################# our lab sessions data ############################
     dataset_config = {
         'dataset': {
-            'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
+            'name': 'data.datasets.SSVEP_our_lab_sessions.SSVEP_our_lab_sessions',
             'args': {},
             'kwargs': {
-                'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
-                'subjects_selected': [8],
+                'dataset_dir': 'H:\\AI\\Datasets\\Sesje_SSVEP\\240319_PW_6_7_8Hz',
+                'file_prefixes': 'session_19_03_SSVEP_',
                 'channels_selected': ['Oz'],
-                'targets_selected': [9.25],
-                'overlap': 255,
-                # 'percent_of_best_snr': 10
+                # 'channels_selected': ['O1', 'Oz', 'O2', 'Cz', 'Fp1', 'ObokOka', 'Kark', 'Policzek', 'Szczeka'],
+                'targets_selected': [7],
+                'overlap': 0,
             }
         }
     }
-    dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
+    dataset = SSVEP_our_lab_sessions(**dataset_config['dataset']['kwargs'])
+    # change targets to 0, dataset is TensorDataset
+    dataset.dataset = torch.utils.data.TensorDataset(dataset.dataset.tensors[0],
+                                                     torch.zeros_like(dataset.dataset.tensors[1]))
+
     config['orig_fs'] = dataset.fs
-    config['n_classes'] = 12
+    config['n_classes'] = 1
 
     ############## prepare dataset ##############################
     dataset.train_data = dataset_org.train_data
@@ -167,11 +191,11 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     dataset.train_data.y_onehot = dataset.train_data.y_onehot[:n_examples]
 
     ################# data normalization ############################
-    # dataset.train_data.X = (dataset.train_data.X - dataset.train_data.X.mean()) / dataset.train_data.X.std()
+    dataset.train_data.X = (dataset.train_data.X - dataset.train_data.X.mean()) / dataset.train_data.X.std()
 
     ################# add noise to data ############################
-    noise = torch.randn_like(dataset.train_data.X) * 0.1
-    dataset.train_data.X += noise
+    # noise = torch.randn_like(dataset.train_data.X) * 0.1 * dataset.train_data.X.std()
+    # dataset.train_data.X += noise
 
     ##############################################################
 

@@ -14,6 +14,7 @@ from eeggan.data.dataset import Data
 from eeggan.training.discriminator import Discriminator
 from eeggan.training.generator import Generator
 from eeggan.training.trainer.utils import detach_all
+import wandb
 
 
 class BatchOutput:
@@ -86,6 +87,8 @@ class Trainer(Engine, metaclass=ABCMeta):
         n = engine.state.max_epochs
         i = engine.state.iteration
         print("Epoch {}/{} : {} - loss_d: {} loss_g: {}".format(e, n, i, batch_out.loss_d, batch_out.loss_g))
+        wandb.log({"epoch": e, "iteration": i})
+        wandb.log({"loss_d": batch_out.loss_d, "loss_g": batch_out.loss_g})
 
     def train_discriminator(self, batch_real: Data[torch.Tensor], batch_fake: Data[torch.Tensor], latent: torch.Tensor):
         raise NotImplementedError
