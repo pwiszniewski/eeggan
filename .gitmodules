@@ -1,0 +1,3 @@
+[submodule "eeggan/data/ssvep_datasets"]
+	path = eeggan/data/ssvep_datasets
+	url = git@github.com:pwiszniewski/ssvep_datasets.git

@@ -9,12 +9,15 @@ def read_config():
     if computer_name == "DESKTOP-SAI3PJD":
         config_path = 'H:\\Documents\\1_dokt\\other_programs\\eeggan\\settings_laptop.ini'
     elif computer_name == 'DESKTOP-CM8AHTB':
-        config_path = 'C:\\Users\przem\\OneDrive - Politechnika Warszawska\Dokumenty\\1_dokt\\other_programs_PC\\eeggan\\settings_PC.ini'
+        config_path = 'C:\\Users\przem\\OneDrive - Politechnika Warszawska\Dokumenty\\1_dokt\\programs\\other_programs\\eeggan\\settings_PC.ini'
     else:
         raise Exception(f"Computer name not found {computer_name}")
 
     config = configparser.ConfigParser()
     config.read(config_path)
+
+    if len(config.sections()) == 0:
+        raise Exception(f"Config file not found or empty: {config_path}")
     return config
 
 
@@ -28,6 +31,7 @@ def convert_to_base60(x):
     digits.reverse()
     signs = "ΓΔΘΞΦΨΩΠABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     return "".join(signs[digit] for digit in digits)
+
 
 def get_experiment_prefix():
     now = datetime.datetime.now()
