@@ -1,10 +1,10 @@
 import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 import joblib
 # import torch
 from ignite.engine import Events
 
-import os
 import sys
 current_path = os.getcwd()
 print('current path', current_path)
