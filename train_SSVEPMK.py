@@ -1,8 +1,7 @@
-#  Author: Kay Hartmann <kg.hartma@gmail.com>
 import os
 
 import joblib
-import torch
+# import torch
 from ignite.engine import Events
 
 import os
@@ -26,6 +25,8 @@ from eeggan.examples.high_gamma.make_data import load_dataset
 import wandb
 
 import numpy as np
+
+import torch
 
 
 ################################# GAN config #############################################################
@@ -61,7 +62,6 @@ default_config = dict(
     discfading='cubic',
     genfading='cubic',
 )
-
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config):
         # model_builder: ProgressiveModelBuilder = default_model_builder):
@@ -251,11 +251,6 @@ def format_time_seconds(seconds):
 
 
 if __name__ == '__main__':
-    import torch
-    print(torch.cuda.is_available())
-    # print(torch.cuda.current_device())
-    print(torch.__version__)
-    assert 1==0
     config = read_config()
     experiment_name = get_experiment_prefix() + '_' + config['TRAINING']['result_name']
     result_path_subj = os.path.join(config['PATHS']['result_path'], experiment_name, config['TRAINING']['subj_ind'])
