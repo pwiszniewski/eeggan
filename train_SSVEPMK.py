@@ -71,69 +71,6 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
 
     dataset_org = load_dataset(subj_ind, dataset_path) # dla kompatybilności
 
-    ################## original data ############################
-    # dataset = dataset_org
-
-    ################## MK gen data ############################
-    # dataset_config = {
-    #     'fs': 256,
-    #     'dataset': {
-    #         'name': 'data.datasets.MK_gen.MK_gen',
-    #         'args': {},
-    #         'kwargs': {
-    #             'dataset_dir': 'P:\Datasets\MK_gen_231229',
-    #             'subjects_selected': [0],
-    #             'channels_selected': ['1'],
-    #             'targets_selected': [8],  # 8 13
-    #             'overlap': 0,
-    #             'file_suffix': 'high',
-    #             'percent_of_data': 10
-    #         }
-    #     }
-    # }
-    # dataset = MK_gen(**dataset_config['dataset']['kwargs'])
-    # config['orig_fs'] = dataset.fs
-    # config['n_classes'] = 1
-
-    # ################# 12 JFPM SSVEP data ############################
-    # dataset_config = {
-    #     'dataset': {
-    #         'name': 'data.datasets.SSVEP_12JFPM.SSVEP_12JFPM',
-    #         'args': {},
-    #         'kwargs': {
-    #             'dataset_dir': 'H:\\AI\\Datasets\\12JFPM_SSVEP\\data',
-    #             'subjects_selected': [8],
-    #             'channels_selected': ['Oz'],
-    #             'targets_selected': [9.25],
-    #             'overlap': 255,
-    #             # 'percent_of_best_snr': 10
-    #         }
-    #     }
-    # }
-    # dataset = SSVEP_12JFPM(**dataset_config['dataset']['kwargs'])
-    # config['orig_fs'] = dataset.fs
-    # config['n_classes'] = 12
-
-    # ################# our lab sessions data ############################
-    # dataset_config = {
-    #     'dataset': {
-    #         'name': 'data.datasets.SSVEP_our_lab_sessions.SSVEP_our_lab_sessions',
-    #         'args': {},
-    #         'kwargs': {
-    #             'dataset_dir': 'H:\\AI\\Datasets\\Sesje_SSVEP\\240319_PW_6_7_8Hz',
-    #             'file_prefixes': 'session_19_03_SSVEP_',
-    #             'channels_selected': ['Oz'],
-    #             # 'channels_selected': ['O1', 'Oz', 'O2', 'Cz', 'Fp1', 'ObokOka', 'Kark', 'Policzek', 'Szczeka'],
-    #             'targets_selected': [7],
-    #             'overlap': 0,
-    #         }
-    #     }
-    # }
-    # dataset = SSVEP_our_lab_sessions(**dataset_config['dataset']['kwargs'])
-    # # change targets to 0, dataset is TensorDataset
-    # dataset.dataset = torch.utils.data.TensorDataset(dataset.dataset.tensors[0],
-    #                                                  torch.zeros_like(dataset.dataset.tensors[1]))
-
     ########################### SSVEP_MK ############################
     from eeggan.data.ssvep_datasets.SSVEP_MK import SSVEPMK
 
@@ -161,8 +98,6 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
 
     dataset = SSVEPMK(**dataset_config['dataset']['kwargs'])
     dat = dataset.dataset
-    data_test = np.array([dat[i][0].numpy() for i in range(len(dat))])
-    targets_test = np.array([dat[i][1].numpy() for i in range(len(dat))])
 
     ################################################
 
@@ -252,8 +187,8 @@ def format_time_seconds(seconds):
 
 if __name__ == '__main__':
     config = read_config()
-    experiment_name = get_experiment_prefix() + '_' + config['TRAINING']['result_name']
-    result_path_subj = os.path.join(config['PATHS']['result_path'], experiment_name, config['TRAINING']['subj_ind'])
+    experiment_name = get_experiment_prefix() + '_' + config['SSVEP_MK']['result_name']
+    result_path_subj = os.path.join(config['PATHS']['result_path'], experiment_name, config['SSVEP_MK']['subj_ind'])
     os.makedirs(result_path_subj, exist_ok=True)
 
     # add empty file for notes
