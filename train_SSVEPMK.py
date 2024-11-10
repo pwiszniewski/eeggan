@@ -18,7 +18,7 @@ from eeggan.examples.high_gamma.train import train
 from eeggan.model.builder import ProgressiveModelBuilder
 from eeggan.pytorch.utils.weights import weight_filler
 from eeggan.training.progressive.handler import ProgressionHandler
-from eeggan.training.trainer.gan_softplus import GanSoftplusTrainer
+from eeggan.training.trainer.gan_softplus import GanSoftplusTrainer, GanSoftplusTrainerWithSpectralLoss, SpectralLoss
 from utils import read_config, get_experiment_prefix
 from eeggan.examples.high_gamma.make_data import load_dataset
 
@@ -47,14 +47,14 @@ default_config = dict(
     use_fade=False,
     freeze_stages=True,
 
-    n_latent=50,  # latent vector size
+    n_latent=200,  # latent vector size
     r1_gamma=10.,
     r2_gamma=0.,
     lr_d=0.005,  # discriminator learning rate
     lr_g=0.001,  # generator learning rate
     betas=(0., 0.99),  # optimizer betas
 
-    n_filters=120,
+    n_filters=240, # 120
     n_time=256, # INPUT_LENGTH(896), 256
 
     upsampling='area', # 'nearest', 'linear', 'area', 'cubic'
@@ -162,7 +162,14 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
     discriminator.apply(weight_filler)
 
     # trainer engine
-    trainer = GanSoftplusTrainer(10, discriminator, generator, config['r1_gamma'], config['r2_gamma'])
+    # trainer = GanSoftplusTrainer(10, discriminator, generator, config['r1_gamma'], config['r2_gamma'])
+    trainer = GanSoftplusTrainerWithSpectralLoss(i_logging=10,
+                                                    discriminator=discriminator,
+                                                    generator=generator,
+                                                    r1_gamma=config['r1_gamma'],
+                                                    r2_gamma=config['r2_gamma'],
+                                                    spectral_loss=SpectralLoss(n_fft=256),
+                                                    spectral_loss_weight=0.1)
 
     # handles potential progression after each epoch
     progression_handler = ProgressionHandler(discriminator, generator, config['n_stages'], config['use_fade'],

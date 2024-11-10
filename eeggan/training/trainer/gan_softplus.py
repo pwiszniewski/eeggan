@@ -102,3 +102,105 @@ def calc_gradient_penalty(X: torch.Tensor, y: torch.Tensor, outputs: torch.Tenso
     gradients = torch.cat([tmp.reshape(tmp.size(0), -1) for tmp in gradients], 1)
     gradient_penalty = 0.5 * gradients.norm(2, dim=1).pow(2).mean()
     return gradient_penalty
+
+
+class SpectralLoss(torch.nn.Module):
+    '''
+    strata spektralna jako średnia różnica między spektrami syngałów rzeczywistych i wygenerowanych
+    '''
+
+    def __init__(self, n_fft: int):
+        super().__init__()
+        self.n_fft = n_fft
+
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        spec_real = torch.fft.rfft(X, n=self.n_fft, dim=-1)
+        spec_real = torch.abs(spec_real)
+        spec_real = spec_real / spec_real.sum(dim=-1, keepdim=True)
+
+        spec_fake = torch.fft.rfft(X, n=self.n_fft, dim=-1)
+        spec_fake = torch.abs(spec_fake)
+        spec_fake = spec_fake / spec_fake.sum(dim=-1, keepdim=True)
+
+        return torch.mean(torch.abs(spec_real - spec_fake))
+
+class GanSoftplusTrainerWithSpectralLoss(Trainer):
+    def __init__(self, i_logging, discriminator, generator, r1_gamma, r2_gamma, spectral_loss, spectral_loss_weight):
+        '''
+        spectral_loss_weight: float [0, 1] weight of the spectral loss in the total loss 
+        '''
+        self.spectral_loss = spectral_loss
+        self.spectral_loss_weight = spectral_loss_weight
+        self.r1_gamma = r1_gamma
+        self.r2_gamma = r2_gamma
+        super().__init__(i_logging, discriminator, generator)
+
+    def train_discriminator(self, batch_real, batch_fake, latent):
+        self.discriminator.zero_grad()
+        self.optim_discriminator.zero_grad()
+
+        has_r1 = self.r1_gamma > 0. or self.spectral_loss_weight > 0.
+        fx_real = self.discriminator(batch_real.X.requires_grad_(has_r1), y=batch_real.y.requires_grad_(has_r1),
+                                     y_onehot=batch_real.y_onehot.requires_grad_(has_r1))
+        loss_real_time = softplus(-fx_real).mean()
+        loss_real_spectral = self.spectral_loss(batch_real.X)
+        loss_real = loss_real_time + self.spectral_loss_weight * loss_real_spectral
+        loss_real.backward(retain_graph=has_r1)
+
+        loss_r1 = None
+        if has_r1:
+            r1_penalty = self.r1_gamma * calc_gradient_penalty(batch_real.X.requires_grad_(True),
+                                                               batch_real.y_onehot.requires_grad_(True), fx_real)
+            r1_penalty.backward()
+            loss_r1 = r1_penalty.item()
+
+        has_r2 = self.r2_gamma > 0.
+        fx_fake = self.discriminator(batch_fake.X.requires_grad_(has_r2), y=batch_fake.y.requires_grad_(has_r2),
+                                     y_onehot=batch_fake.y_onehot.requires_grad_(has_r2))
+        # ta strata jest dla fake
+        loss_fake_time = softplus(fx_fake).mean()
+        loss_fake_spectral = self.spectral_loss(batch_fake.X)
+        loss_fake = loss_fake_time + self.spectral_loss_weight * loss_fake_spectral
+        loss_fake.backward(retain_graph=has_r2)
+        loss_r2 = None
+
+        if has_r2:
+            r2_penalty = self.r1_gamma * calc_gradient_penalty(batch_fake.X.requires_grad_(True),
+                                                               batch_fake.y_onehot.requires_grad_(True), fx_real)
+            r2_penalty.backward()
+            loss_r2 = r2_penalty.item()
+
+        self.optim_discriminator.step()
+
+        return {"loss_real": loss_real.item(), "loss_fake": loss_fake.item(), "r1_penalty": loss_r1,
+                "r2_penalty": loss_r2}
+    
+    def train_generator(self, batch_real: Data[torch.Tensor]):
+        self.generator.zero_grad()
+        self.optim_generator.zero_grad()
+        self.generator.train(True)
+        self.discriminator.train(False)
+
+        with torch.no_grad():
+            latent, y_fake, y_onehot_fake = to_device(batch_real.X.device,
+                                                      *self.generator.create_latent_input(self.rng, len(batch_real.X)))
+            latent, y_fake, y_onehot_fake = detach_all(latent, y_fake, y_onehot_fake)
+
+        X_fake = self.generator(latent.requires_grad_(False), y=y_fake.requires_grad_(False),
+                                y_onehot=y_onehot_fake.requires_grad_(False))
+        batch_fake = Data[torch.Tensor](X_fake, y_fake, y_onehot_fake)
+
+        fx_fake = self.discriminator(batch_fake.X.requires_grad_(True), y=batch_fake.y.requires_grad_(True),
+                                     y_onehot=batch_fake.y_onehot.requires_grad_(True))
+        loss_time = softplus(-fx_fake).mean()
+        loss_spectral = self.spectral_loss(batch_fake.X)
+
+        loss = loss_time + self.spectral_loss_weight * loss_spectral
+        loss.backward()
+
+        self.optim_generator.step()
+
+        return loss.item()
+
+
+    
