@@ -47,7 +47,7 @@ default_config = dict(
     use_fade=False,
     freeze_stages=True,
 
-    n_latent=200,  # latent vector size
+    n_latent=50,  # latent vector size
     r1_gamma=10.,
     r2_gamma=0.,
     lr_d=0.005,  # discriminator learning rate
@@ -57,10 +57,12 @@ default_config = dict(
     n_filters=120,
     n_time=256, # INPUT_LENGTH(896), 256
 
-    upsampling='area',
+    upsampling='area', # 'nearest', 'linear', 'area', 'cubic'
     downsampling='area',
-    discfading='cubic',
-    genfading='cubic',
+    # discfading='cubic',
+    # genfading='cubic',
+    discfading='linear',
+    genfading='linear',
 )
 
 def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = default_config):
@@ -88,7 +90,7 @@ def run(subj_ind: int, dataset_path: str, deep4_path: str, config: dict = defaul
                 'subjects': [subject],
                 'targets_selected': target_freqs,
                 'transform': None,
-                'target_transform':None,
+                'target_transform': None,
                 'is_train': True,
                 'scale_data': 1/50,
                 'reset_labels': True,
